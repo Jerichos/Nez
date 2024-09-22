@@ -6,12 +6,14 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework.Content;
 using System.Threading.Tasks;
 using System.IO;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Nez.ParticleDesigner;
 using Nez.Sprites;
 using Nez.Textures;
 using Nez.Tiled;
 using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
 using Nez.BitmapFonts;
 using Nez.Aseprite;
 
@@ -68,7 +70,125 @@ namespace Nez.Systems
 		{}
 
 		#region Strongly Typed Loaders
+		public Sprite LoadSpriteFromAtlas(string spriteName, string atlasName)
+		{
+			var spriteTexture = LoadTexture(atlasName);
+			var atlasJson = atlasName.Replace(".png", ".json");
+			var json = File.ReadAllText(atlasJson);
+			
+			var lines = json.Split('\n');
+			string line = lines.FirstOrDefault(l => l.Contains(spriteName));
 
+			Rectangle rectangle;
+			Vector2 origin = default; // pivot
+			bool hasOrigin = false;
+			if (line != null)
+			{
+				// Example line:
+				// { "name": "TestDrone", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 32, "h": 16 } }] }
+
+				// Find the part that contains the bounds.
+				if(!line.Contains("bounds"))
+					throw new Exception("sprite bounds not found in atlas");
+				
+				var boundsPart = line.Substring(line.IndexOf("\"bounds\""));
+
+				// Now extract the numbers from the bounds part.
+				int x = ExtractValue(boundsPart, "\"x\":");
+				int y = ExtractValue(boundsPart, "\"y\":");
+				int width = ExtractValue(boundsPart, "\"w\":");
+				int height = ExtractValue(boundsPart, "\"h\":");
+
+				// Create the Rectangle from the extracted values.
+				rectangle = new Rectangle(x, y, width, height);
+				
+				// pivot example:
+				// { "name": "DoorEntity", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 32, "y": 0, "w": 16, "h": 48 }, "pivot": {"x": 0, "y": 24 } }] }
+				if (line.Contains("pivot"))
+				{
+					hasOrigin = true;
+					var pivotPart = line.Substring(line.IndexOf("\"pivot\""));
+					int pivotX = ExtractValue(pivotPart, "\"x\":");
+					int pivotY = ExtractValue(pivotPart, "\"y\":");
+					origin = new Vector2(pivotX, pivotY);
+				}
+			}
+			else
+			{
+				Debug.Error("Sprite not found in atlas");
+				rectangle = new Rectangle(0, 0, 32, 32);
+			}
+			
+			return !hasOrigin ? new Sprite(spriteTexture, rectangle) : new Sprite(spriteTexture, rectangle, origin);
+		}
+		
+		public SpriteAnimation LoadSpriteAnimation(string spriteName, string atlasName)
+		{
+			// sprite example name: homing, laser... etc.
+			List<Sprite> sprites = [];
+			List<float> frameRates = [];
+			
+			var spriteTexture = LoadTexture(atlasName);
+			var atlasJson = atlasName.Replace(".png", ".json");
+			var json = File.ReadAllText(atlasJson);
+			
+			// parse sprites and frame rates from the atlas
+			var lines = json.Split('\n');
+			Rectangle rectangle;
+			for (int i = 0; i < lines.Length; i++)
+			{
+				if (lines[i].Contains(spriteName))
+				{
+					if (lines[i+1].Contains("frame"))
+					{
+						var frameLine = lines[i+1];
+						rectangle.X = ExtractValue(frameLine, "\"x\":");
+						rectangle.Y = ExtractValue(frameLine, "\"y\":");
+						rectangle.Width = ExtractValue(frameLine, "\"w\":");
+						rectangle.Height= ExtractValue(frameLine, "\"h\":");
+						
+						float duration = ExtractValue(lines[i+6], "\"duration\":");
+						
+						sprites.Add(new Sprite(spriteTexture, rectangle));
+						frameRates.Add(duration);
+					}
+				}
+			}
+			
+			return new SpriteAnimation(sprites.ToArray(), frameRates.ToArray());
+		}
+		
+		public Song LoadSong(string name)
+		{
+			name = name.Replace(@"Content\", "").Replace(".ogg", "");
+
+			if (LoadedAssets.TryGetValue(name, out var asset))
+			{
+				if (asset is Song song1)
+				{
+					return song1;
+				}
+			}
+
+			var song = Load<Song>(name);
+			LoadedAssets[name] = song;
+			DisposableAssets.Add(song);
+			return song;
+		}
+		
+		private int ExtractValue(string source, string key)
+		{
+			// Find the index of the key and extract the value.
+			int startIndex = source.IndexOf(key) + key.Length;
+			int endIndex = source.IndexOfAny([',', '}'], startIndex); // Find the end of the value.
+			if(endIndex == -1)
+				endIndex = source.Length;
+			string valueString = source.Substring(startIndex, endIndex - startIndex).Trim();
+    
+			// Convert the extracted string to an integer and return it.
+			return int.Parse(valueString);
+		}
+		
 		/// <summary>
 		/// loads a Texture2D either from xnb or directly from a png/jpg. Note that xnb files should not contain the .xnb file
 		/// extension or be preceded by "Content" in the path. png/jpg files should have the file extension and have an absolute
