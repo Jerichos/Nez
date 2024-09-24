@@ -490,6 +490,11 @@ namespace Nez.Tiled
 			{
 				obj.Tile = new TmxLayerTile(map, (uint)xGid);
 				obj.ObjectType = TmxObjectType.Tile;
+
+				if (string.IsNullOrEmpty(obj.Type))
+				{
+					obj.Type = obj.Tile.TilesetTile.Type;
+				}
 			}
 			else if (xEllipse != null)
 			{

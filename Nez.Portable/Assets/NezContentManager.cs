@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Content;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework;
 using Nez.ParticleDesigner;
 using Nez.Sprites;
@@ -14,6 +15,7 @@ using Nez.Textures;
 using Nez.Tiled;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
+using Newtonsoft.Json;
 using Nez.BitmapFonts;
 using Nez.Aseprite;
 
@@ -122,7 +124,65 @@ namespace Nez.Systems
 			return !hasOrigin ? new Sprite(spriteTexture, rectangle) : new Sprite(spriteTexture, rectangle, origin);
 		}
 		
-		public SpriteAnimation LoadSpriteAnimation(string spriteName, string atlasName)
+		public SpriteAnimation LoadSpriteAnimationFromSlices(string spriteName, string contentSpritesAssemblyAssPng)
+		{
+			List<Sprite> sprites = new List<Sprite>();
+			List<float> frameRates = new List<float>();
+
+			// Load the texture and JSON data
+			var spriteTexture = LoadTexture(contentSpritesAssemblyAssPng);
+			var atlasJson = contentSpritesAssemblyAssPng.Replace(".png", ".json");
+			var json = File.ReadAllText(atlasJson);
+
+			// Parse the JSON content
+			var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(json);
+			var frames = jsonObject["frames"];
+			var slices = jsonObject["meta"]["slices"];
+
+			// Find the specific slice by name
+			foreach (var slice in slices)
+			{
+				if (slice["name"].ToString() == spriteName)
+				{
+					var sliceKeys = slice["keys"];
+					foreach (var key in sliceKeys)
+					{
+						var frameIndex = key["frame"];
+						var frameData = frames[$"{frameIndex}"];
+
+						var spriteSourceSize = frameData["spriteSourceSize"];
+						var frameBounds = frameData["frame"];
+						var bounds = key["bounds"];
+						
+						Rectangle sourceRect = new Rectangle(
+							(int)frameBounds["x"] + (int)bounds["x"] - (int)spriteSourceSize["x"], 
+							(int)frameBounds["y"] + (int)bounds["y"] - (int)spriteSourceSize["y"], 
+							(int)bounds["w"], 
+							(int)bounds["h"]
+						);
+
+						// Extract duration for this frame
+						float duration = (float)frameData["duration"];
+						
+						bool hasPivot = key.ContainsKey("pivot");
+						Vector2 pivot = hasPivot ? new Vector2((float)key["pivot"]["x"], (float)key["pivot"]["y"]) : Vector2.Zero;
+
+						// Add the sprite and frame rate
+						if(!hasPivot)
+							sprites.Add(new Sprite(spriteTexture, sourceRect));
+						else
+							sprites.Add(new Sprite(spriteTexture, sourceRect, pivot));
+						frameRates.Add(duration);
+					}
+					break; // Stop once the spriteName slice is processed
+				}
+			}
+
+			return new SpriteAnimation(sprites.ToArray(), frameRates.ToArray());
+		}
+
+		
+		public SpriteAnimation LoadSpriteAnimationFromTags(string spriteName, string atlasName)
 		{
 			// sprite example name: homing, laser... etc.
 			List<Sprite> sprites = [];
@@ -593,6 +653,8 @@ namespace Nez.Systems
 
 			_loadedEffects.Clear();
 		}
+
+		
 	}
 
 
