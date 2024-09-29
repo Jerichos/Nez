@@ -22,6 +22,12 @@ using Nez.Aseprite;
 
 namespace Nez.Systems
 {
+public struct FrameRange
+{
+	public int Start;
+	public int End;
+}
+
 	/// <summary>
 	/// ContentManager subclass that also manages Effects from ogl files. Adds asynchronous loading of assets as well.
 	/// </summary>
@@ -86,9 +92,6 @@ namespace Nez.Systems
 			bool hasOrigin = false;
 			if (line != null)
 			{
-				// Example line:
-				// { "name": "TestDrone", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 32, "h": 16 } }] }
-
 				// Find the part that contains the bounds.
 				if(!line.Contains("bounds"))
 					throw new Exception("sprite bounds not found in atlas");
@@ -162,7 +165,10 @@ namespace Nez.Systems
 						);
 
 						// Extract duration for this frame
-						float duration = (float)frameData["duration"];
+						float duration = (float)frameData["duration"]; // this is in ms
+						
+						// convert duration to framerate
+						duration /= 10f;
 						
 						bool hasPivot = key.ContainsKey("pivot");
 						Vector2 pivot = hasPivot ? new Vector2((float)key["pivot"]["x"], (float)key["pivot"]["y"]) : Vector2.Zero;
@@ -181,7 +187,6 @@ namespace Nez.Systems
 			return new SpriteAnimation(sprites.ToArray(), frameRates.ToArray());
 		}
 
-		
 		public SpriteAnimation LoadSpriteAnimationFromTags(string spriteName, string atlasName)
 		{
 			// sprite example name: homing, laser... etc.
@@ -217,7 +222,73 @@ namespace Nez.Systems
 			
 			return new SpriteAnimation(sprites.ToArray(), frameRates.ToArray());
 		}
-		
+
+		public void LoadSpriteAnimationsFromTags(string atlasName, Action<SpriteAnimation, string> onLoaded)
+		{
+		    // Load the texture associated with the atlas
+		    var spriteTexture = LoadTexture(atlasName);
+
+		    // Load the corresponding JSON file that contains frame data
+		    var atlasJson = atlasName.Replace(".png", ".json");
+		    var json = File.ReadAllText(atlasJson);
+
+		    // Deserialize the JSON data into a dictionary
+		    var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(json);
+		    var frames = jsonObject["frames"];
+		    
+		    // Arrays to hold sprite frames, frame rates, and frame ranges
+		    Sprite[] sprites = new Sprite[frames.Count];
+		    float[] frameRates = new float[frames.Count];
+		    
+		    // Track the last animation name and index
+		    string lastFrameName = frames.First().Key;
+		    int lastAnimationFrame = 0;
+		    
+		    for (int i = 0; i < frames.Count; i++)
+		    {
+		        // Extract the current frame name and data
+		        var frame = frames.ElementAt(i);
+		        var frameName = frame.Key;
+		        var frameData = frame.Value;
+		    
+		        // Get frame bounds from the "frame" property in JSON data
+		        var frameBounds = frameData["frame"];
+		        var sourceRect = new Rectangle((int)frameBounds["x"], (int)frameBounds["y"], (int)frameBounds["w"], (int)frameBounds["h"]);
+		    
+		        // Create a sprite using the texture and source rectangle
+		        sprites[i] = new Sprite(spriteTexture, sourceRect);
+		    
+		        // Set frame duration (convert it if necessary, divide if frames are in milliseconds)
+		        var duration = (float)frameData["duration"];
+		        frameRates[i] = duration / 1000f; // Assuming duration is in milliseconds
+		    
+		        // If a new animation is detected, pass the previous animation to the callback
+		        if (frameName != lastFrameName && i > 0)
+		        {
+		            // Pass the range of frames for the previous animation to the callback
+		            var animationSpan = new Span<Sprite>(sprites, lastAnimationFrame, i - lastAnimationFrame);
+		            var frameRateSpan = new Span<float>(frameRates, lastAnimationFrame, i - lastAnimationFrame);
+		            var animation = new SpriteAnimation(animationSpan.ToArray(), frameRateSpan.ToArray());
+		            // onLoaded(animation, lastFrameName);
+		    
+		            // Update the starting index for the next animation
+		            lastAnimationFrame = i;
+		        }
+		    
+		        // Update the last frame name for the next iteration
+		        lastFrameName = frameName;
+		    }
+		    
+		    // Handle the final animation after the loop finishes
+		    if (frames.Count > 0)
+		    {
+		        // var finalSpan = new Span<Sprite>(sprites, lastAnimationFrame, frames.Count - lastAnimationFrame);
+		        // var finalFrameRateSpan = new Span<float>(frameRates, lastAnimationFrame, frames.Count - lastAnimationFrame);
+		        // var finalAnimation = new SpriteAnimation(finalSpan.ToArray(), finalFrameRateSpan.ToArray());
+		        // onLoaded(finalAnimation, lastFrameName);
+		    }
+		}
+
 		public Song LoadSong(string name)
 		{
 			name = name.Replace(@"Content\", "").Replace(".ogg", "");

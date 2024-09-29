@@ -136,7 +136,10 @@ namespace Nez.Sprites
 			switch (CurrentLoopMode)
 			{
 				case LoopMode.Loop:
-					SetFrame((CurrentFrame + 1) % FrameCount);
+					if(!IsReverse)
+						SetFrame((CurrentFrame + 1) % FrameCount);
+					else
+						SetFrame((CurrentFrame - 1 + FrameCount) % FrameCount);
 					break;
 				
 				case LoopMode.Once:
@@ -227,6 +230,8 @@ namespace Nez.Sprites
 		/// </summary>
 		public bool IsRunning => AnimationState == State.Running;
 
+		public bool IsReverse { get; set; }
+
 		/// <summary>
 		/// plays the animation with the given name. If no loopMode is specified it is defaults to Loop
 		/// </summary>
@@ -236,7 +241,10 @@ namespace Nez.Sprites
 			CurrentAnimationName = name;
 			FrameCount = CurrentAnimation.FrameRates.Length;
 			
-			SetFrame(0);
+			if(!IsReverse)
+				SetFrame(0);
+			else
+				SetFrame(FrameCount - 1);
 
 			CurrentLoopMode = loopMode;
 			AnimationState = State.Running;
