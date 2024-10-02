@@ -170,23 +170,45 @@ namespace Nez.Tiled
 			return new TmxTileset().LoadTmxTileset(map, xTileset, firstGid, tmxDir);
 		}
 
-		public static Dictionary<string, string> ParsePropertyDict(XContainer xmlProp)
+		public static Dictionary<string, string> ParsePropertyDict(XContainer xmlProp, Dictionary<string, string> templateProperties = null)
 		{
-			if (xmlProp == null)
-				return null;
-
-			var dict = new Dictionary<string, string>();
-			foreach (var p in xmlProp.Elements("property"))
+			if (templateProperties != null)
 			{
-				var pname = p.Attribute("name").Value;
+				if (xmlProp == null)
+					return templateProperties;
+				
+				var dict = templateProperties;
+				foreach (var p in xmlProp.Elements("property"))
+				{
+					var pname = p.Attribute("name").Value;
 
-				// Fallback to element value if no "value"
-				var valueAttr = p.Attribute("value");
-				var pval = valueAttr?.Value ?? p.Value;
+					// Fallback to element value if no "value"
+					var valueAttr = p.Attribute("value");
+					var pval = valueAttr?.Value ?? p.Value;
 
-				dict.Add(pname, pval);
+					if(!dict.TryAdd(pname, pval))
+						dict[pname] = pval;
+				}
+				return dict;
 			}
-			return dict;
+			else
+			{
+				if (xmlProp == null)
+					return null;
+
+				var dict = new Dictionary<string, string>();
+				foreach (var p in xmlProp.Elements("property"))
+				{
+					var pname = p.Attribute("name").Value;
+
+					// Fallback to element value if no "value"
+					var valueAttr = p.Attribute("value");
+					var pval = valueAttr?.Value ?? p.Value;
+
+					dict.Add(pname, pval);
+				}
+				return dict;
+			}
 		}
 
 		public static Color ParseColor(XAttribute xColor)
@@ -523,8 +545,8 @@ namespace Nez.Tiled
 			{
 				obj.ObjectType = TmxObjectType.Basic;
 			}
-
-			obj.Properties = ParsePropertyDict(xObject.Element("properties"));
+			
+			obj.Properties = ParsePropertyDict(xObject.Element("properties"), obj.Properties);
 
 			return obj;
 		}

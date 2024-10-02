@@ -231,7 +231,7 @@ public struct FrameRange
 		    // Load the corresponding JSON file that contains frame data
 		    var atlasJson = atlasName.Replace(".png", ".json");
 		    var json = File.ReadAllText(atlasJson);
-
+		    
 		    // Deserialize the JSON data into a dictionary
 		    var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(json);
 		    var frames = jsonObject["frames"];

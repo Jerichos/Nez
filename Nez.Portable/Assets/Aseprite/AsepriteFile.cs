@@ -176,10 +176,21 @@ namespace Nez.Aseprite
 			Texture2D texture = new Texture2D(Core.GraphicsDevice, imageWidth, imageHeight);
 			texture.SetData<Color>(imagePixels);
 
-			for (int i = 0; i < Frames.Count; i++)
-			{
-				atlas.Sprites[i] = new Sprite(texture, regions[i]);
-			}
+			AsepriteSlice slice = null;
+			if (Slices.Count > 0)
+				slice = Slices[0];
+			
+			if(slice == null || !slice.HasPivot)
+				for (int i = 0; i < Frames.Count; i++)
+				{
+					atlas.Sprites[i] = new Sprite(texture, regions[i]);
+				}
+			else
+				for (int i = 0; i < Frames.Count; i++)
+				{
+					Vector2 pivot = slice.Keys[0].Pivot.Value.ToVector2();
+					atlas.Sprites[i] = new Sprite(texture, regions[i], pivot);
+				}
 
 			for (int tagNum = 0; tagNum < Tags.Count; tagNum++)
 			{
