@@ -144,14 +144,29 @@ namespace Nez.Sprites
 				
 				case LoopMode.Once:
 				case LoopMode.ClampForever:
-					var newFrame = CurrentFrame + 1;
-					if (newFrame >= FrameCount)
+					if(!IsReverse)
 					{
-						SetCompleted(CurrentLoopMode == LoopMode.Once);
+						var newFrame = CurrentFrame + 1;
+						if (newFrame >= FrameCount)
+						{
+							SetCompleted(CurrentLoopMode == LoopMode.Once);
+						}
+						else
+						{
+							SetFrame(newFrame);
+						}
 					}
 					else
 					{
-						SetFrame(newFrame);
+						var newFrame = CurrentFrame - 1;
+						if (newFrame < 0)
+						{
+							SetCompleted(CurrentLoopMode == LoopMode.Once);
+						}
+						else
+						{
+							SetFrame(newFrame);
+						}
 					}
 					break;
 				
@@ -361,5 +376,7 @@ namespace Nez.Sprites
 				SetFrame(newFrame);
 			}
 		}
+
+		public ref int RenderLayerRef => ref _renderLayer;
 	}
 }

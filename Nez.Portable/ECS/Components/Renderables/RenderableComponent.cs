@@ -66,6 +66,8 @@ namespace Nez
 			set => SetRenderLayer(value);
 		}
 
+		public ref int RenderLayerRef => ref _renderLayer;
+
 		/// <summary>
 		/// color passed along to the Batcher when rendering
 		/// </summary>

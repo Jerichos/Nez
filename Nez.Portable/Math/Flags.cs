@@ -44,6 +44,10 @@ namespace Nez
 			self = 1 << flag;
 		}
 
+		public static void SetFlagExclusive<T>(ref this int self, T flag) where T : Enum
+		{
+			self = 1 << Convert.ToInt32(flag);
+		}
 
 		/// <summary>
 		/// sets the flag bit of the int
@@ -53,6 +57,11 @@ namespace Nez
 		public static void SetFlag(ref int self, int flag)
 		{
 			self = (self | 1 << flag);
+		}
+
+		public static void SetFlag<T>(ref this int self, T flag) where T : Enum
+		{
+			self = (self | 1 << Convert.ToInt32(flag));
 		}
 
 
@@ -66,7 +75,6 @@ namespace Nez
 			flag = 1 << flag;
 			self = (self & (~flag));
 		}
-
 
 		/// <summary>
 		/// inverts the set bits of the int

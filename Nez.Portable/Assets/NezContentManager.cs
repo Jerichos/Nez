@@ -126,7 +126,30 @@ public struct FrameRange
 			
 			return !hasOrigin ? new Sprite(spriteTexture, rectangle) : new Sprite(spriteTexture, rectangle, origin);
 		}
-		
+
+		public Sprite LoadSpriteFromSlice(string slice, string contentPath)
+		{
+			var spriteTexture = LoadTexture(contentPath);
+			var atlasJson = contentPath.Replace(".png", ".json");
+			var json = File.ReadAllText(atlasJson);
+
+			var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(json);
+			var slices = jsonObject["meta"]["slices"];
+			foreach (var sliceData in slices)
+			{
+				if (sliceData["name"].ToString() == slice)
+				{
+					// { "name": "tableLeft", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 96, "y": 0, "w": 32, "h": 32 } }] },
+					var bounds = sliceData["keys"][0]["bounds"];
+					var sourceRect = new Rectangle((int)bounds["x"], (int)bounds["y"], (int)bounds["w"], (int)bounds["h"]);
+					return new Sprite(spriteTexture, sourceRect);
+				}
+			}
+
+			throw new Exception($"Slice {slice} not found in {contentPath}");
+		}
+
+
 		public SpriteAnimation LoadSpriteAnimationFromSlices(string spriteName, string contentSpritesAssemblyAssPng)
 		{
 			List<Sprite> sprites = new List<Sprite>();

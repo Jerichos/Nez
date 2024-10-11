@@ -21,27 +21,30 @@ namespace Nez
 		[DebuggerHidden]
 		static void Log(LogType type, string format, params object[] args)
 		{
+			var formattedMessage = string.Format(format, args);
+
 			switch (type)
 			{
 				case LogType.Error:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
+					System.Diagnostics.Debug.WriteLine($"{type}: {formattedMessage}");
 					break;
 				case LogType.Warn:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
+					System.Diagnostics.Debug.WriteLine($"{type}: {formattedMessage}");
 					break;
 				case LogType.Log:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
+					System.Diagnostics.Debug.WriteLine($"{type}: {formattedMessage}");
 					break;
 				case LogType.Info:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
+					System.Diagnostics.Debug.WriteLine($"{type}: {formattedMessage}");
 					break;
 				case LogType.Trace:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
+					System.Diagnostics.Debug.WriteLine($"{type}: {formattedMessage}");
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
 		}
+
 
 		[DebuggerHidden]
 		public static void Error(string format, params object[] args)

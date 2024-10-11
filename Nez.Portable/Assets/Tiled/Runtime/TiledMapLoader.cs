@@ -12,6 +12,8 @@ namespace Nez.Tiled
 {
 	public static class TiledMapLoader
 	{
+		public static Action<TmxObject> OnLoadedObjectCallback;
+
 		#region TmxMap Loader
 
 		public static TmxMap LoadTmxMap(this TmxMap map, string filepath, NezContentManager contentManager = null)
@@ -513,7 +515,7 @@ namespace Nez.Tiled
 				obj.Tile = new TmxLayerTile(map, (uint)xGid);
 				obj.ObjectType = TmxObjectType.Tile;
 
-				if (string.IsNullOrEmpty(obj.Type))
+				if (string.IsNullOrEmpty(obj.Type) && obj.Tile.TilesetTile != null)
 				{
 					obj.Type = obj.Tile.TilesetTile.Type;
 				}
@@ -547,7 +549,7 @@ namespace Nez.Tiled
 			}
 			
 			obj.Properties = ParsePropertyDict(xObject.Element("properties"), obj.Properties);
-
+			OnLoadedObjectCallback?.Invoke(obj);
 			return obj;
 		}
 

@@ -334,6 +334,9 @@ namespace Nez.Tiled
 
 						var tileset = objGroup.Map.GetTilesetForTileGid(obj.Tile.Gid);
 						var sourceRect = tileset.TileRegions[obj.Tile.Gid];
+						if (tileset.Image == null)
+							goto default;
+
 						batcher.Draw(tileset.Image.Texture, pos, sourceRect, Color.White, 0, Vector2.Zero, scale, spriteEffects, layerDepth);
 						goto default;
 					case TmxObjectType.Ellipse:
