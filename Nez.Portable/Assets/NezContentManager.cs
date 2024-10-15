@@ -135,14 +135,22 @@ public struct FrameRange
 
 			var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(json);
 			var slices = jsonObject["meta"]["slices"];
+			bool hasPivot = false;
 			foreach (var sliceData in slices)
 			{
 				if (sliceData["name"].ToString() == slice)
 				{
-					// { "name": "tableLeft", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 96, "y": 0, "w": 32, "h": 32 } }] },
+					// { "name": "tableLeft", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 96, "y": 0, "w": 32, "h": 32 }, "pivot": {"x": 0, "y": 32 } }] },
 					var bounds = sliceData["keys"][0]["bounds"];
+					var pivot = sliceData["keys"][0]["pivot"];
+					hasPivot = sliceData["keys"][0].ContainsKey("pivot");
+					
 					var sourceRect = new Rectangle((int)bounds["x"], (int)bounds["y"], (int)bounds["w"], (int)bounds["h"]);
-					return new Sprite(spriteTexture, sourceRect);
+					
+					if (hasPivot)
+						return new Sprite(spriteTexture, sourceRect, new Vector2((float)pivot["x"], (float)pivot["y"]));
+					else
+						return new Sprite(spriteTexture, sourceRect);
 				}
 			}
 
