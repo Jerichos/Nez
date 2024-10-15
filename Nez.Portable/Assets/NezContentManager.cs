@@ -120,11 +120,10 @@ public struct FrameRange
 			}
 			else
 			{
-				Debug.Error("Sprite not found in atlas");
-				rectangle = new Rectangle(0, 0, 32, 32);
+				throw new Exception("sprite not found in atlas");
 			}
 			
-			return !hasOrigin ? new Sprite(spriteTexture, rectangle) : new Sprite(spriteTexture, rectangle, origin);
+			return !hasOrigin ? new Sprite(spriteTexture, rectangle, new Vector2(0,32)) : new Sprite(spriteTexture, rectangle, origin);
 		}
 
 		public Sprite LoadSpriteFromSlice(string slice, string contentPath)
