@@ -145,8 +145,8 @@ namespace Nez
 
 		public override void DebugRender(Batcher batcher)
 		{
-			foreach (var group in TiledMap.ObjectGroups)
-				TiledRendering.RenderObjectGroup(group, batcher, Entity.Transform.Position + _localOffset, Transform.Scale, LayerDepth);
+			// foreach (var group in TiledMap.ObjectGroups)
+			// 	TiledRendering.RenderObjectGroup(group, batcher, Entity.Transform.Position + _localOffset, Transform.Scale, LayerDepth);
 
 			if (_colliders != null)
 			{

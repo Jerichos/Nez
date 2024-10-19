@@ -547,8 +547,11 @@ namespace Nez.Tiled
 			{
 				obj.ObjectType = TmxObjectType.Basic;
 			}
+
+			// if there are no template properties, take as default the tile properties
+			if (obj.Properties == null && obj.Tile is { TilesetTile.Properties: not null })
+				obj.Properties = new Dictionary<string, string>(obj.Tile.TilesetTile.Properties);
 			
-			obj.Properties = ParsePropertyDict(xObject.Element("properties"), obj.Properties);
 			OnLoadedObjectCallback?.Invoke(obj);
 			return obj;
 		}
